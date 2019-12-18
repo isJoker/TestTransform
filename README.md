@@ -181,10 +181,10 @@ uploadArchives {
 ```
 我们这里是发布plugin插件到本地仓库，上面配置的`groupId`、`artifactId`和`version`属性能容都是可以自定义的，当应用程序引用这个插件时会用到这些信息。通过`repositories`属性，可以把uri配置在本地目录，这样就可以把maven设置成本地仓库，我们目前把仓库配置到当前Project根目录下的repo目录。
 
-####2、 删除plugin/src/main目录下的所有文件，新建groovy目录
+#### 2、 删除plugin/src/main目录下的所有文件，新建groovy目录
 因为插件我们用的是groovy语言开发的，所以需要放到groovy目录下。接着再groovy目录下新建一个package `com.jokerwan.demo.plugin`来存放Transform类文件
 
-####3、 创建Transform类
+#### 3、 创建Transform类
 在包`com.jokerwan.demo.plugin`下创建`JokerWanTransform.groovy`类，直接new一个file，名称为“JokerWanTransform.groovy”，代码如下：
 ```
 package com.jokerwan.demo.plugin
@@ -309,7 +309,7 @@ class JokerWanTransform extends Transform {
 ```
 我们在`transform`方法里面，先打印一个提示信息，然后分别遍历目录和jar包，在这里我们仅仅把所有的输入文件拷贝到目标目录下，并没有对文件进行任何处理。**这里需要注意的是，即使我们对文件没有任何处理，任然需要将所有的输入文件拷贝到目标目录下，否则下一个Task就没有TansformInput了，如果我们将 input 的目录复制到 output 指定目录，最后会导致打包的apk缺少.class文件**。
 
-####4、 创建plugin
+#### 4、 创建plugin
 在包`com.jokerwan.demo.plugin`下创建`JokerWanPlugin.groovy`类，并将`JokerWanTransform`类注册进去
 ```
 class JokerWanPlugin implements Plugin<Project> {
@@ -321,7 +321,7 @@ class JokerWanPlugin implements Plugin<Project> {
 ```
 `JokerWanPlugin`实现了`Plugin<Project>`接口中的`apply(Project project)`方法，获取一个`appExtension`对象，然后调用其`registerTransform`方法将`JokerWanTransformNew`的实例注册进去
 
-####5、 创建properties文件
+#### 5、 创建properties文件
 在plugin/src/main目录下新建目录 `resources/META-INF/gradle-plugins`，接着在此目录下新建文件`com.jokerwan.android.properties`，文件内容如下：
 ```
 implementation-class=com.jokerwan.demo.plugin.JokerWanPlugin
@@ -332,7 +332,7 @@ apply plugin: 'com.jokerwan.android'
 ```
 “=”号后面的内容就是我们插件类`JokerWanPlugin`的全类名
 
-####6、 构建plugin
+#### 6、 构建plugin
 执行plugin的`uploadArchives`任务构建plugin
 ![](https://upload-images.jianshu.io/upload_images/9513946-d1c3eec1d1932605.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
@@ -341,7 +341,7 @@ apply plugin: 'com.jokerwan.android'
 
 
 
-####7、 添加对插件的依赖
+#### 7、 添加对插件的依赖
 ##### 7.1、 修改项目根目录下的build.gradle文件
 ![](https://upload-images.jianshu.io/upload_images/9513946-4c513cf3f913d4aa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
@@ -349,7 +349,7 @@ apply plugin: 'com.jokerwan.android'
 ![](https://upload-images.jianshu.io/upload_images/9513946-bff621b69384c995.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 
-####8、 构建应用程序
+#### 8、 构建应用程序
 可以通过命令行进行编译
 ```
 ./gradlew assembleDebug
