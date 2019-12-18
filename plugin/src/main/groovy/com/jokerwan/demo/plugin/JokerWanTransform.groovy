@@ -7,16 +7,17 @@ import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 
 class JokerWanTransform extends Transform {
+
     private static Project project
+    private static final String NAME = "JokerWanAutoTrack"
 
-    public JokerWanTransform(Project project) {
+    JokerWanTransform(Project project) {
         this.project = project
-
     }
 
     @Override
     String getName() {
-        return "SensorsAnalyticsAutoTrack"
+        return NAME
     }
 
     /**
@@ -41,7 +42,7 @@ class JokerWanTransform extends Transform {
      * @return
      */
     @Override
-    Set<QualifiedContent.Scope> getScopes() {
+    Set<? super QualifiedContent.Scope> getScopes() {
         return TransformManager.SCOPE_FULL_PROJECT
     }
 
@@ -50,55 +51,69 @@ class JokerWanTransform extends Transform {
         return false
     }
 
-    /**
-     * 打印提示信息
-     */
     static void printCopyRight() {
         println()
-        println("####################################################################")
-        println("########                                                    ########")
-        println("########                                                    ########")
-        println("########           欢迎使用 JokerWan® 编译插件                 ########")
-        println("########          使用过程中碰到任何问题请联系我们               ########")
-        println("########                                                    ########")
-        println("########                                                    ########")
-        println("####################################################################")
+        println("******************************************************************************")
+        println("******                                                                  ******")
+        println("******                欢迎使用 JokerWanTransform 编译插件               ******")
+        println("******                                                                  ******")
+        println("******************************************************************************")
         println()
     }
 
     @Override
-    void transform(Context context, Collection<TransformInput> inputs, Collection<TransformInput> referencedInputs, TransformOutputProvider outputProvider, boolean isIncremental) throws IOException, TransformException, InterruptedException {
+    void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
         printCopyRight()
 
+        TransformOutputProvider outputProvider = transformInvocation.getOutputProvider()
+
         // Transform 的 inputs 有两种类型，一种是目录，一种是 jar 包，要分开遍历
-        inputs.each { TransformInput input ->
-            //遍历目录
-            input.directoryInputs.each { DirectoryInput directoryInput ->
-                //获取 output 目录
-                def dest = outputProvider.getContentLocation(directoryInput.name,
-                        directoryInput.contentTypes, directoryInput.scopes,
-                        Format.DIRECTORY)
-                // 将 input 的目录复制到 output 指定目录
-                FileUtils.copyDirectory(directoryInput.file, dest)
+        transformInvocation.inputs.each { TransformInput input ->
+            input.jarInputs.each { JarInput jarInput ->
+                // 处理jar
+                processJarInput(jarInput, outputProvider)
             }
 
-            //遍历 jar
-            input.jarInputs.each { JarInput jarInput ->
-                // 重命名输出文件（同目录copyFile会冲突）
-                def jarName = jarInput.name
-                def md5Name = DigestUtils.md5Hex(jarInput.file.getAbsolutePath())
-                if (jarName.endsWith(".jar")) {
-                    jarName = jarName.substring(0, jarName.length() - 4)
-                }
-
-                File copyJarFile = jarInput.file
-
-                //生成输出路径
-                def dest = outputProvider.getContentLocation(jarName + md5Name,
-                        jarInput.contentTypes, jarInput.scopes, Format.JAR)
-                // 将 input 的目录复制到 output 指定目录
-                FileUtils.copyFile(copyJarFile, dest)
+            input.directoryInputs.each { DirectoryInput directoryInput ->
+                // 处理源码文件
+                processDirectoryInput(directoryInput, outputProvider)
             }
         }
+
+    }
+
+    void processJarInput(JarInput jarInput, TransformOutputProvider outputProvider) {
+        // 重命名输出文件（同目录copyFile会冲突）
+        def jarName = jarInput.name
+        def md5Name = DigestUtils.md5Hex(jarInput.file.getAbsolutePath())
+        if (jarName.endsWith(".jar")) {
+            jarName = jarName.substring(0, jarName.length() - 4)
+        }
+
+        File dest = outputProvider.getContentLocation(
+                jarName + md5Name,
+                jarInput.getContentTypes(),
+                jarInput.getScopes(),
+                Format.JAR
+        )
+
+        // TODO do some transform
+
+        // 将 input 的目录复制到 output 指定目录
+        FileUtils.copyFile(jarInput.getFile(), dest)
+    }
+
+    void processDirectoryInput(DirectoryInput directoryInput, TransformOutputProvider outputProvider) {
+        File dest = outputProvider.getContentLocation(
+                directoryInput.getName(),
+                directoryInput.getContentTypes(),
+                directoryInput.getScopes(),
+                Format.DIRECTORY
+        )
+
+        // TODO do some transform
+
+        // 将 input 的目录复制到 output 指定目录
+        FileUtils.copyDirectory(directoryInput.getFile(), dest)
     }
 }
