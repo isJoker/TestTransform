@@ -147,84 +147,8 @@ static String getTaskNamePrefix(Transform transform) {
 ### Transform#isCacheable()
 如果我们的transform需要被缓存，则为true，它被TransformTask所用到
 
-## Transform编写模板
 
-### 无增量编译
-AspectJTransform.groovy代码如下：
-```
-class AspectJTransform extends Transform {
-
-    final String NAME =  "JokerwanTransform"
-
-    @Override
-    String getName() {
-        return NAME
-    }
-
-    @Override
-    Set<QualifiedContent.ContentType> getInputTypes() {
-        return TransformManager.CONTENT_CLASS
-    }
-
-    @Override
-    Set<? super QualifiedContent.Scope> getScopes() {
-        return TransformManager.SCOPE_FULL_PROJECT
-    }
-
-    @Override
-    boolean isIncremental() {
-        return false
-    }
-
-      @Override
-    void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
-        super.transform(transformInvocation)
-
-        // OutputProvider管理输出路径，如果消费型输入为空，你会发现OutputProvider == null
-        TransformOutputProvider outputProvider = transformInvocation.getOutputProvider();
-
-        transformInvocation.inputs.each { TransformInput input ->
-            input.jarInputs.each { JarInput jarInput ->
-                // 处理Jar
-                processJarInput(jarInput, outputProvider)
-            }
-
-            input.directoryInputs.each { DirectoryInput directoryInput ->
-                // 处理源码文件
-                processDirectoryInputs(directoryInput, outputProvider)
-            }
-        }
-    }
-
-    void processJarInput(JarInput jarInput, TransformOutputProvider outputProvider) {
-        File dest = outputProvider.getContentLocation(
-                jarInput.getFile().getAbsolutePath(),
-                jarInput.getContentTypes(),
-                jarInput.getScopes(),
-                Format.JAR)
-                
-        // to do some transform
-        
-        // 将修改过的字节码copy到dest，就可以实现编译期间干预字节码的目的了        
-        FileUtils.copyFiley(jarInput.getFile(), dest)
-    }
-
-    void processDirectoryInputs(DirectoryInput directoryInput, TransformOutputProvider outputProvider) {
-        File dest = outputProvider.getContentLocation(directoryInput.getName(),
-                directoryInput.getContentTypes(), directoryInput.getScopes(),
-                Format.DIRECTORY)
-        // 建立文件夹        
-        FileUtils.forceMkdir(dest)
-        
-        // to do some transform
-        
-        // 将修改过的字节码copy到dest，就可以实现编译期间干预字节码的目的了        
-        FileUtils.copyDirectory(directoryInput.getFile(), dest)
-    }
-}
-```
-
-##手把手教你实现一个 Gradle Tansform 实例
+## 手把手教你实现一个 Gradle Tansform 实例
 #### 1、 新建 Android Library Module ：plugin，清空plugin的build.gradle文件中的内容，然后修改成如下内容
 ```
 apply plugin: 'groovy'
