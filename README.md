@@ -223,3 +223,213 @@ class AspectJTransform extends Transform {
     }
 }
 ```
+
+##手把手教你实现一个 Gradle Tansform 实例
+#### 1、 新建 Android Library Module ：plugin，清空plugin的build.gradle文件中的内容，然后修改成如下内容
+```
+apply plugin: 'groovy'
+apply plugin: 'maven'
+dependencies {
+    implementation gradleApi() //gradle sdk
+    implementation localGroovy() //groovy sdk
+
+    implementation 'com.android.tools.build:gradle:3.4.1'
+}
+repositories {
+    jcenter()
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        //本地仓库路径，以放到项目根目录下的 repo 的文件夹为例
+        repository(url: uri('../repo'))
+
+        //groupId ，自行定义，组织名或公司名
+        pom.groupId = 'com.jokerwan'
+
+        //artifactId，自行定义，项目名或模块名
+        pom.artifactId = 'autotrack.android'
+
+        //插件版本号
+        pom.version = '1.0.0'
+    }
+}
+```
+我们这里是发布plugin插件到本地仓库，上面配置的`groupId`、`artifactId`和`version`属性能容都是可以自定义的，当应用程序引用这个插件时会用到这些信息。通过`repositories`属性，可以把uri配置在本地目录，这样就可以把maven设置成本地仓库，我们目前把仓库配置到当前Project根目录下的repo目录。
+
+####2、 删除plugin/src/main目录下的所有文件，新建groovy目录
+因为插件我们用的是groovy语言开发的，所以需要放到groovy目录下。接着再groovy目录下新建一个package `com.jokerwan.demo.plugin`来存放Transform类文件
+
+####3、 创建Transform类
+在包`com.jokerwan.demo.plugin`下创建`JokerWanTransform.groovy`类，直接new一个file，名称为“JokerWanTransform.groovy”，代码如下：
+```
+package com.jokerwan.demo.plugin
+
+import com.android.build.api.transform.*
+import com.android.build.gradle.internal.pipeline.TransformManager
+import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.io.FileUtils
+import org.gradle.api.Project
+
+class JokerWanTransform extends Transform {
+
+    private static Project project
+    private static final String NAME = "JokerWanAutoTrack"
+
+    JokerWanTransform(Project project) {
+        this.project = project
+    }
+
+    @Override
+    String getName() {
+        return NAME
+    }
+
+    /**
+     * 需要处理的数据类型，有两种枚举类型
+     * CLASSES 代表处理的 java 的 class 文件，RESOURCES 代表要处理 java 的资源
+     * @return
+     */
+    @Override
+    Set<QualifiedContent.ContentType> getInputTypes() {
+        return TransformManager.CONTENT_CLASS
+    }
+
+    /**
+     * 指 Transform 要操作内容的范围，官方文档 Scope 有 7 种类型：
+     * 1. EXTERNAL_LIBRARIES        只有外部库
+     * 2. PROJECT                   只有项目内容
+     * 3. PROJECT_LOCAL_DEPS        只有项目的本地依赖(本地jar)
+     * 4. PROVIDED_ONLY             只提供本地或远程依赖项
+     * 5. SUB_PROJECTS              只有子项目。
+     * 6. SUB_PROJECTS_LOCAL_DEPS   只有子项目的本地依赖项(本地jar)。
+     * 7. TESTED_CODE               由当前变量(包括依赖项)测试的代码
+     * @return
+     */
+    @Override
+    Set<? super QualifiedContent.Scope> getScopes() {
+        return TransformManager.SCOPE_FULL_PROJECT
+    }
+
+    @Override
+    boolean isIncremental() {
+        return false
+    }
+
+    static void printCopyRight() {
+        println()
+        println("******************************************************************************")
+        println("******                                                                  ******")
+        println("******                欢迎使用 JokerWanTransform 编译插件               ******")
+        println("******                                                                  ******")
+        println("******************************************************************************")
+        println()
+    }
+
+    @Override
+    void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
+        printCopyRight()
+
+        TransformOutputProvider outputProvider = transformInvocation.getOutputProvider()
+
+        // Transform 的 inputs 有两种类型，一种是目录，一种是 jar 包，要分开遍历
+        transformInvocation.inputs.each { TransformInput input ->
+            input.jarInputs.each { JarInput jarInput ->
+                // 处理jar
+                processJarInput(jarInput, outputProvider)
+            }
+
+            input.directoryInputs.each { DirectoryInput directoryInput ->
+                // 处理源码文件
+                processDirectoryInput(directoryInput, outputProvider)
+            }
+        }
+
+    }
+
+    void processJarInput(JarInput jarInput, TransformOutputProvider outputProvider) {
+        // 重命名输出文件（同目录copyFile会冲突）
+        def jarName = jarInput.name
+        def md5Name = DigestUtils.md5Hex(jarInput.file.getAbsolutePath())
+        if (jarName.endsWith(".jar")) {
+            jarName = jarName.substring(0, jarName.length() - 4)
+        }
+
+        File dest = outputProvider.getContentLocation(
+                jarName + md5Name,
+                jarInput.getContentTypes(),
+                jarInput.getScopes(),
+                Format.JAR
+        )
+
+        // TODO do some transform
+
+        // 将 input 的目录复制到 output 指定目录
+        FileUtils.copyFile(jarInput.getFile(), dest)
+    }
+
+    void processDirectoryInput(DirectoryInput directoryInput, TransformOutputProvider outputProvider) {
+        File dest = outputProvider.getContentLocation(
+                directoryInput.getName(),
+                directoryInput.getContentTypes(),
+                directoryInput.getScopes(),
+                Format.DIRECTORY
+        )
+
+        // TODO do some transform
+
+        // 将 input 的目录复制到 output 指定目录
+        FileUtils.copyDirectory(directoryInput.getFile(), dest)
+    }
+}
+```
+我们在`transform`方法里面，先打印一个提示信息，然后分别遍历目录和jar包，在这里我们仅仅把所有的输入文件拷贝到目标目录下，并没有对文件进行任何处理。**这里需要注意的是，即使我们对文件没有任何处理，任然需要将所有的输入文件拷贝到目标目录下，否则下一个Task就没有TansformInput了，如果我们将 input 的目录复制到 output 指定目录，最后会导致打包的apk缺少.class文件**。
+
+####4、 创建plugin
+在包`com.jokerwan.demo.plugin`下创建`JokerWanPlugin.groovy`类，并将`JokerWanTransform`类注册进去
+```
+class JokerWanPlugin implements Plugin<Project> {
+    void apply(Project project) {
+        AppExtension appExtension = project.extensions.findByType(AppExtension.class)
+        appExtension.registerTransform(new JokerWanTransform(project))
+    }
+}
+```
+`JokerWanPlugin`实现了`Plugin<Project>`接口中的`apply(Project project)`方法，获取一个`appExtension`对象，然后调用其`registerTransform`方法将`JokerWanTransformNew`的实例注册进去
+
+####5、 创建properties文件
+在plugin/src/main目录下新建目录 `resources/META-INF/gradle-plugins`，接着在此目录下新建文件`com.jokerwan.android.properties`，文件内容如下：
+```
+implementation-class=com.jokerwan.demo.plugin.JokerWanPlugin
+```
+文件名`com.jokerwan.android`就是用来指定插件名称的，apply该组件时会用到，即
+```
+apply plugin: 'com.jokerwan.android'
+```
+“=”号后面的内容就是我们插件类`JokerWanPlugin`的全类名
+
+####6、 构建plugin
+执行plugin的`uploadArchives`任务构建plugin
+![](https://upload-images.jianshu.io/upload_images/9513946-d1c3eec1d1932605.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+构建成功之后，在项目的根目录会生成一个repo目录，里面存放的就是plugin插件的目标文件。构建成功输出信息如下：
+![](https://upload-images.jianshu.io/upload_images/9513946-a245cf1946fac854.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+
+
+####7、 添加对插件的依赖
+##### 7.1、 修改项目根目录下的build.gradle文件
+![](https://upload-images.jianshu.io/upload_images/9513946-4c513cf3f913d4aa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+##### 7.2、 修改app/build.gradle文件
+![](https://upload-images.jianshu.io/upload_images/9513946-bff621b69384c995.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+
+####8、 构建应用程序
+可以通过命令行进行编译
+```
+./gradlew assembleDebug
+```
+如果编译没有报错的话并且看到相应的输出信息，就可以说明上面定义的`JokerWanTransform`已经成功运行了。编译成功输出信息如下：
+![](https://upload-images.jianshu.io/upload_images/9513946-a67ae33eed0a74b3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
