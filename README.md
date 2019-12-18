@@ -334,19 +334,19 @@ apply plugin: 'com.jokerwan.android'
 
 #### 6、 构建plugin
 执行plugin的`uploadArchives`任务构建plugin
-![](https://upload-images.jianshu.io/upload_images/9513946-d1c3eec1d1932605.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![image](https://upload-images.jianshu.io/upload_images/9513946-d1c3eec1d1932605.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 构建成功之后，在项目的根目录会生成一个repo目录，里面存放的就是plugin插件的目标文件。构建成功输出信息如下：
-![](https://upload-images.jianshu.io/upload_images/9513946-a245cf1946fac854.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![image](https://upload-images.jianshu.io/upload_images/9513946-a245cf1946fac854.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 
 
 #### 7、 添加对插件的依赖
 ##### 7.1、 修改项目根目录下的build.gradle文件
-![](https://upload-images.jianshu.io/upload_images/9513946-4c513cf3f913d4aa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![image](https://upload-images.jianshu.io/upload_images/9513946-4c513cf3f913d4aa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 ##### 7.2、 修改app/build.gradle文件
-![](https://upload-images.jianshu.io/upload_images/9513946-bff621b69384c995.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![image](https://upload-images.jianshu.io/upload_images/9513946-bff621b69384c995.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 
 #### 8、 构建应用程序
@@ -355,5 +355,5 @@ apply plugin: 'com.jokerwan.android'
 ./gradlew assembleDebug
 ```
 如果编译没有报错的话并且看到相应的输出信息，就可以说明上面定义的`JokerWanTransform`已经成功运行了。编译成功输出信息如下：
-![](https://upload-images.jianshu.io/upload_images/9513946-a67ae33eed0a74b3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![image](https://upload-images.jianshu.io/upload_images/9513946-a67ae33eed0a74b3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
