@@ -9,7 +9,7 @@
 
 Google从 Android Gradle 1.5.0 开始，提供了Transform API。通过Transform API，允许第三方以插件的形式，在Android应用程序打包成dex文件之前的编译过程中操作.class文件。我们只要实现一套Transform，去遍历所有.class文件的所有方法，然后进行修改（在特定的listener回调中插入埋点代码），再对源文件进行替换，即可以达到插入代码的目的。
 
-##Gradle Transform概述
+## Gradle Transform概述
 
 Gradle Transform是Android官方提供给开发者在项目构建阶段（.class -> .dex转换期间）用来修改.class文件的一套标准API，即把输入的.class文件转变成目标字节码文件。目前比较经典的应用是字节码插桩、代码注入等。
 
@@ -27,7 +27,7 @@ Gradle Transform是Android官方提供给开发者在项目构建阶段（.class
 * TransformInput
 * TransformOutputProvider
 
-##TransformInput
+## TransformInput
 TransformInput是指输入文件的一个抽象，包括：
 * DitectoryInput集合
 是指以源码的方式参与项目编译的所有目录结构及其目录下的源码文件
@@ -35,7 +35,7 @@ TransformInput是指输入文件的一个抽象，包括：
 * JarInput集合
 是指以jar包方式参与项目编译的所有本地jar包和远程jar包（此处的jar包包括aar）
 
-##TransformOutputProvider
+## TransformOutputProvider
 之Transform的输出，通过它可以获取到输出路径等信息
 
 ## Transform.java
